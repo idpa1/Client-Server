@@ -10,4 +10,7 @@
 #define PORT 6423
 
 // how many pending connections queue will hold
-#define BACKLOG 15
+#define BACKLOG 5
+
+// Reception Buffer size in bytes
+#define	RECVBUFFSIZE 4096 // 4 KB
