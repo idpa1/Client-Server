@@ -9,3 +9,6 @@
 
 // The port client will be connecting to
 #define PORT 6423
+
+// Send buffer size in bytes
+#define	SENDBUFFSIZE 1024 // 1 KB
