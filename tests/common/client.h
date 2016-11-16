@@ -5,9 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <netdb.h>
 
 // The port client will be connecting to
 #define PORT 6423
-
-// how many pending connections queue will hold
-#define BACKLOG 15
