@@ -3,6 +3,7 @@
 .cproject
 .project
 .settings
+Debug/
 
 # Object files
 *.o
@@ -37,4 +38,3 @@
 # Debug files
 *.dSYM/
 *.su
-/Debug/
