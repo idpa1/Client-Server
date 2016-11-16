@@ -1,3 +1,9 @@
+
+# Project files
+.cproject
+.project
+.settings
+
 # Object files
 *.o
 *.ko
@@ -31,3 +37,4 @@
 # Debug files
 *.dSYM/
 *.su
+/Debug/
