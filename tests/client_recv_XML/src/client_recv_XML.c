@@ -67,6 +67,19 @@ int main(int argc, char *argv[]) {
 	printf("Message size: %lu\n",strlen(sendBuff));
 	printf("Message sent: %s\n", sendBuff);
 
+	/* Get answer from the server */
+
+	num_bytes = read(sockfd, sendBuff, SENDBUFFSIZE-1);
+	if (num_bytes < 0) {
+		perror("ERROR Client - Cannot read from socket");
+	    exit(1);
+	}
+
+	/*  null terminate your buffer */
+	sendBuff[num_bytes] = '\0';
+
+	printf("Message received size: %lu\n",strlen(sendBuff));
+	printf("Received Message: %s\n", sendBuff);
 	printf("TEST SUCCESS\n");
 
 	/* Close server connection */

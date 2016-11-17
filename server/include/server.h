@@ -15,7 +15,10 @@
 #define BACKLOG 5
 
 // Reception Buffer size in bytes
-#define	RECVBUFFSIZE 4096 // 4 KB
+#define	SERVERRECVBUFFSIZE 4096 // 4 KB
+
+// Server send Buffer size in bytes
+#define	SERVERSNDBUFFSIZE 4096 // 4 KB
 
 // XML Status file
 #define STSFILE "XMLsts.dat"
