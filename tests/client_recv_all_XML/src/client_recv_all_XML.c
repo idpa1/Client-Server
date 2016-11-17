@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 	}
 	/* Free xml*/
 	free(xml);
-	/* Cleanup*/
+	/* Cleanup */
 	ezxml_free(root);
 
 	/*Send message to the server */

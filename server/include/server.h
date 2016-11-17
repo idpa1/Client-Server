@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include "ezxml.h"
+
 
 // The port client will be connecting to
 #define PORT 6423
@@ -14,3 +16,7 @@
 
 // Reception Buffer size in bytes
 #define	RECVBUFFSIZE 4096 // 4 KB
+
+// XML Status file
+#define STSFILE "XMLsts.dat"
+
