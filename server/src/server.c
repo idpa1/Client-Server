@@ -35,15 +35,14 @@ static unsigned int verbose_level = 0;
  */
 void usage(char* pgname){
     printf("Usage: %s [OPTIONS] \n",pgname);
-    printf("Run Server \n\n");
-    printf("with\n");
-    printf( "    OPTIONS\n");
-    printf( "     --verbose=<int>\n"
-            "       verbose level. Available levels:\n"
-            "        0: No verbosity \n"
-            "        1: Full verbose\n");
-    printf( "     --help\n"
-            "       display this help and exit\n.");
+    printf("Run Server \n");
+    printf("OPTIONS\n");
+    printf(" --verbose=<int>\n"
+           "    verbose level. Available levels:\n"
+           "    0: No verbosity \n"
+           "    1: Full verbose\n");
+    printf(" --help\n"
+           "   display this help and exit\n.");
 }
 
 
@@ -58,13 +57,6 @@ void usage(char* pgname){
 int parse_args(int argc, char * argv[]){
     /* Local variables */
     int  i = 1; // Used for the command line arguments (0 -> program name, 1 -> first argument ...)
-
-    /* Get arguments from the command line */
-    if (argc < 2)
-    {
-        usage(argv[0]);
-        return -1;
-    }
 
     /* process arguments */
     while(argv[i] != NULL){
@@ -386,6 +378,25 @@ void parseXML(int clientfd, char* buff){
 	free (cpybuff);
 }
 
+/**
+ * \brief Count substrings in a string
+ *
+ * \param[in] name      Substring name
+ * \param[in] str       String to parse
+ *
+ * \return returns 0 if success. Otherwise -1
+ */
+int count_substrings(char* name, char* str){
+	int count = 0;
+	const char *tmp = str;
+	while((tmp = strstr(tmp, name)) != NULL)
+	{
+	   count++;
+	   tmp++;
+	}
+	return count;
+}
+
 
 /**
  * \brief Server main function
@@ -407,8 +418,14 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-	/* Reception buffer */
+	/* Receptions buffer */
 	char recvBuff[SERVERRECVBUFFSIZE];
+
+	/* Variable to handle several commands in a message */
+	int cnt;
+	char *retptr,*updtr,*subrecvBuffprt;
+	char subrecvBuff[SERVERRECVBUFFSIZE];
+
 	/* Number of bytes read from the file descriptor */
 	int num_bytes;
 	/* Listen connections on sockfd */
@@ -496,11 +513,45 @@ int main(int argc, char *argv[]) {
 			 *  or fail the operation*/
 
 			if (verbose_level){
-				printf("Received Message: %s\n", recvBuff);
+				printf("Server - Received Message: %s\n", recvBuff);
 			}
+
+			/* Check the content of the request
+			 * If the request include several commands -> Split them
+			 * TODO:If the buffer is incomplete
+			 */
+			/* Count the number of retrieve and update commands */
+			cnt = count_substrings("retrieve",recvBuff)+count_substrings("update",recvBuff);
+			memcpy(subrecvBuff, recvBuff, strlen(recvBuff)+1);
+			subrecvBuffprt = subrecvBuff;
 
 			/* Parse XML request */
 			parseXML(clientfd, recvBuff);
+			while (cnt>2){
+				/* jump pointer of 5 chars to avoid the first command */
+				subrecvBuffprt+=5;
+
+				retptr = strstr(subrecvBuffprt, "retrieve");
+				updtr = strstr(subrecvBuffprt, "update");
+
+				if (retptr == NULL){
+					/* The next command is update */
+					subrecvBuffprt=updtr-1;
+				}else if (updtr == NULL){
+					/* The next command is retrieve */
+					subrecvBuffprt=retptr-1;
+				}else{
+					/* At least to different remaining commands -> take the first one */
+					if (retptr > updtr){
+						subrecvBuffprt=retptr-1;
+					}else{
+						subrecvBuffprt=updtr-1;
+					}
+				}
+				/* Process remaining requests in the buffer */
+				parseXML(clientfd, subrecvBuffprt);
+				cnt-=2;
+			}
 		}
 	    /* Close client connection */
 	    close(clientfd);
