@@ -1,6 +1,103 @@
+/**
+   \file server.c
+   \brief Server source file. This server consumes XML requests from clients and it is able to:
+            - store and update the status of several measurement sensors.
+            - answer the clients' requests if the clients ask for the status of any sensor value
+   <B>
+   \n
+    COPYRIGHT :
+   </B>
+
+   \par  Module owner:
+   \li     Iker DE POY
+
+   \par  Authors:
+   \li     Iker DE POY
+
+   \par  Id: $Id$
+   \par  Date: $Date$
+   \par  Revision: $Rev$
+
+*/
+
 #include "server.h"
 
+/* Default user parameters */
+static unsigned int verbose_level = 0;
 
+
+/**
+ * \brief Print help
+ *
+ * \param[in] pgname   program name
+ *
+ * \return returns void
+ */
+void usage(char* pgname){
+    printf("Usage: %s [OPTIONS] \n",pgname);
+    printf("Run Server \n\n");
+    printf("with\n");
+    printf( "    OPTIONS\n");
+    printf( "     --verbose=<int>\n"
+            "       verbose level. Available levels:\n"
+            "        0: No verbosity \n"
+            "        1: Full verbose\n");
+    printf( "     --help\n"
+            "       display this help and exit\n.");
+}
+
+
+/**
+ * \brief Check and parse user arguments
+ *
+ * \param[in] argc   Number of arguments
+ * \param[in] argv   Arguments
+ *
+ * \return returns 0 if arguments are right. Otherwise -1.
+ */
+int parse_args(int argc, char * argv[]){
+    /* Local variables */
+    int  i = 1; // Used for the command line arguments (0 -> program name, 1 -> first argument ...)
+
+    /* Get arguments from the command line */
+    if (argc < 2)
+    {
+        usage(argv[0]);
+        return -1;
+    }
+
+    /* process arguments */
+    while(argv[i] != NULL){
+
+        /* Get '--verbose=' argument */
+        if (strstr(argv[i],"--verbose=") != NULL){
+            verbose_level = atoi(strstr(argv[i],"=")+1);
+
+        /* Get '--help' argument */
+        }else if (!strcmp(argv[i], "--help")){
+            usage(argv[0]);
+            return -1;
+        }else{
+            printf(" Error: The argument '%s' is not recognised\n",argv[i]);
+            usage(argv[0]);
+            return -1;
+        }
+        i++;
+    }
+
+    return 0;
+}
+
+
+/**
+ * \brief Retrieves values from the status file and send XML message with the requested values
+ *
+ * \param[in] clientfd     Client file descriptor
+ * \param[in] src_msg      XML message from client
+ * \param[in] xml_sts_str  XML message from status file
+ *
+ * \return returns void
+ */
 void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 
 	/* Pointer to the ezxml child struct */
@@ -24,7 +121,9 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 		/* First child of the status XML message */
 		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
 		if (stsxmlchild == NULL){
-			printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
+			if (verbose_level){
+				printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
+			}
 		}else{
 
 			child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
@@ -40,7 +139,6 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 				/*Write status XML message */
 				child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
 				ezxml_set_txt(child_tag,stsxmlchild->txt);
-				printf("Valores extraidos %s %s\n",stsxmlchild->name,stsxmlchild->txt);
 			}
 		}
 
@@ -82,10 +180,21 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 		exit(1);
 	}
 
-	printf("Server - The following message has been sent by the server: %s  OK ...\n",sendBuff);
+	if (verbose_level){
+		printf("Server - The following message has been sent by the server: %s  OK ...\n",sendBuff);
+	}
 }
 
 
+/**
+ * \brief Update the status file values with the received XML
+ *
+ * \param[in] fp           Status file pointer
+ * \param[in] src_msg      XML message from client
+ * \param[in] xml_sts_str  XML message from status file
+ *
+ * \return returns void
+ */
 void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 
 	/* Pointer to the ezxml source child struct */
@@ -104,10 +213,14 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 		if (stsxmlchild == NULL){
 			new_child_tag = ezxml_add_child(stsxmlchild, (*xmlchild)->name, 0);
 			ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
-			printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
+			if (verbose_level){
+				printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
+			}
 		}else{
 			ezxml_set_txt(stsxmlchild,(*xmlchild)->txt);
-			printf("Server - %s field updated with value %s   OK...\n",(*xmlchild)->name,(*xmlchild)->txt);
+			if (verbose_level){
+				printf("Server - %s field updated with value %s   OK...\n",(*xmlchild)->name,(*xmlchild)->txt);
+			}
 		}
 
 		/* The rest of the children */
@@ -118,19 +231,36 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 			if (stsxmlchild == NULL){
 				new_child_tag = ezxml_add_child(stsxmlchild, (*xmlchild)->name, 0);
 				ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
-				printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
+				if (verbose_level){
+					printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
+				}
 			}else{
-				printf("Server - %s field updated with value %s\n",(*xmlchild)->name,(*xmlchild)->txt);
+				if (verbose_level){
+					printf("Server - %s field updated with value %s\n",(*xmlchild)->name,(*xmlchild)->txt);
+				}
 				ezxml_set_txt(stsxmlchild,(*xmlchild)->txt);
 			}
 		}
 	}else{
-		printf("Server - The XML update message is empty. Doing nothing  OK ...\n");
+		if (verbose_level){
+			printf("Server - The XML update message is empty. Doing nothing  OK ...\n");
+		}
 	}
-	printf("Server - Status file updated OK ...\n");
+
+	if (verbose_level){
+		printf("Server - Status file updated OK ...\n");
+	}
 }
 
 
+/**
+ * \brief Parse XML request
+ *
+ * \param[in] clientfd      Client socket file descriptor
+ * \param[in] buff          XML message buffer
+ *
+ * \return returns void
+ */
 void parseXML(int clientfd, char* buff){
 
 	/* Status file pointer */
@@ -152,7 +282,9 @@ void parseXML(int clientfd, char* buff){
 	/* Update command */
 	if (strcmp(xml_msg->name, "update") == 0){
 		/* Update command */
-		printf("Server - Receive an update command OK ...\n");
+		if (verbose_level){
+			printf("Server - Receive an update command OK ...\n");
+		}
 
 		/* Check if the status file exists */
 		if (access( STSFILE, F_OK ) == -1 ){
@@ -169,7 +301,9 @@ void parseXML(int clientfd, char* buff){
 			/* write whole buffer to the file */
 			fprintf(file,"%s",cpybuff);
 
-			printf("Server - New status file created OK ...\n");
+			if (verbose_level){
+				printf("Server - New status file created OK ...\n");
+			}
 
 		}else{
 
@@ -205,17 +339,19 @@ void parseXML(int clientfd, char* buff){
 			ezxml_free(xml_sts_str);
 		}
 
-
-
 	}else if(strcmp(xml_msg->name, "retrieve") == 0){
 		/* Retrieve message */
-		printf("Server - Receive a retrieve command OK ...\n");
+		if (verbose_level){
+			printf("Server - Receive a retrieve command OK ...\n");
+		}
 
 		/* Check if the status file exists */
 		if (access( STSFILE, F_OK ) == -1 ){
 
 			/* Status file doesn't exist. Do nothing */
-			printf("Server - Retrieve command received but there isn't a status file. Doing nothing OK ...\n");
+			if (verbose_level){
+				printf("Server - Retrieve command received but there isn't a status file. Doing nothing OK ...\n");
+			}
 
 		}else{
 			/* Opens a file for reading */
@@ -235,11 +371,8 @@ void parseXML(int clientfd, char* buff){
 			/* Retrieve values from the status file */
 			retrieve_values(clientfd, file, &xml_msg, &xml_sts_str);
 
-			/* Send Client the status XML message */
-
 			/* Free memory */
 			ezxml_free(xml_sts_str);
-
 		}
 	}
 
@@ -253,7 +386,26 @@ void parseXML(int clientfd, char* buff){
 	free (cpybuff);
 }
 
+
+/**
+ * \brief Server main function
+ *
+ * \param[in] argc       Number of arguments
+ * \param[in] argv       Arguments
+ *
+ * \return returns 0 if success. Otherwise -1
+ */
 int main(int argc, char *argv[]) {
+
+
+    /* Local variable used for error management */
+    int error = 0;
+
+    /* Arguments parsing */
+    error = parse_args(argc, argv);
+    if (error != 0){
+        return -1;
+    }
 
 	/* Reception buffer */
 	char recvBuff[SERVERRECVBUFFSIZE];
@@ -279,7 +431,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 
 	}else{
-		printf("Server - Socket created OK ...\n");
+		if (verbose_level){
+			printf("Server - Socket created OK ...\n");
+		}
 	}
 
 	/* Initialise socket address/port structure */
@@ -294,7 +448,9 @@ int main(int argc, char *argv[]) {
 		perror("ERROR Server - Socket cannot be binded");
 		exit(1);
 	}else{
-	    printf("Server - Socket binded OK ...\n");
+		if (verbose_level){
+			printf("Server - Socket binded OK ...\n");
+		}
 	}
 
 	/* Now start listening for the clients */
@@ -316,7 +472,9 @@ int main(int argc, char *argv[]) {
 			perror("ERROR Server - Cannot accept a connection");
 			exit(1);
 		}else{
-			printf("Server - Received request from Client %s:%d\n",inet_ntoa(client_addr.sin_addr),PORT);
+			if (verbose_level){
+				printf("Server - Received request from Client %s:%d\n",inet_ntoa(client_addr.sin_addr),PORT);
+			}
 		}
 
 		/* If connection is established then start communicating. */
@@ -334,10 +492,12 @@ int main(int argc, char *argv[]) {
 		 * reallocate the buffer with a larger size
 		 *  or fail the operation*/
 
-	    printf("Received Message: %s\n", recvBuff);
+		if (verbose_level){
+			printf("Received Message: %s\n", recvBuff);
+		}
 
-	    /* Parse XML request */
-	    parseXML(clientfd, recvBuff);
+		/* Parse XML request */
+		parseXML(clientfd, recvBuff);
 	    /* Close client connection */
 	    close(clientfd);
 	}
