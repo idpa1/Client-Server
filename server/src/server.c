@@ -113,13 +113,13 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	/*Write status XML message */
 	sndstsxml = ezxml_new("status");
 
-	/* REtrieve specific values. Parse all child nodes from retrieve XML */
+	/* Retrieve specific values. Parse all child nodes from retrieve XML */
 	if ((*src_msg)->child != NULL){
 		/* First child retrieve XML message */
 		xmlchild = &(*src_msg)->child;
 
-		/* First child of the status XML message */
-		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
+		/* Get child of the status XML message with the same tag */
+		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 		if (stsxmlchild == NULL){
 			if (verbose_level){
 				printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
@@ -134,7 +134,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 				/* Get next child following the order */
 				xmlchild = &(*xmlchild)->ordered;
 				/* Look for the child in the status XML stream */
-				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
+				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 
 				/*Write status XML message */
 				child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
@@ -477,27 +477,31 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		/* If connection is established then start communicating. */
+		while(1){
+			/* If connection is established then start communicating. */
+			num_bytes = read(clientfd, recvBuff, SERVERRECVBUFFSIZE-1);
+			if (num_bytes < 0) {
+				perror("ERROR Server - Cannot read from socket");
+				exit(1);
+			}
 
-		num_bytes = read(clientfd, recvBuff, SERVERRECVBUFFSIZE-1);
-		if (num_bytes < 0) {
-			perror("ERROR Server - Cannot read from socket");
-			exit(1);
+			if (num_bytes == 0){
+				break;
+			}
+			/*  null terminate your buffer */
+			recvBuff[num_bytes] = '\0';
+
+			/* TODO: if the data exceeds the buffer's capacity
+			 * reallocate the buffer with a larger size
+			 *  or fail the operation*/
+
+			if (verbose_level){
+				printf("Received Message: %s\n", recvBuff);
+			}
+
+			/* Parse XML request */
+			parseXML(clientfd, recvBuff);
 		}
-
-		/*  null terminate your buffer */
-		recvBuff[num_bytes] = '\0';
-
-		/* TODO: if the data exceeds the buffer's capacity
-		 * reallocate the buffer with a larger size
-		 *  or fail the operation*/
-
-		if (verbose_level){
-			printf("Received Message: %s\n", recvBuff);
-		}
-
-		/* Parse XML request */
-		parseXML(clientfd, recvBuff);
 	    /* Close client connection */
 	    close(clientfd);
 	}
