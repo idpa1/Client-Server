@@ -127,11 +127,15 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 				xmlchild = &(*xmlchild)->ordered;
 				/* Look for the child in the status XML stream */
 				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
-
-				/*Write status XML message */
-				child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
-				ezxml_set_txt(child_tag,stsxmlchild->txt);
+				if (stsxmlchild == NULL){
+					printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
+				}else{
+					/*Write status XML message */
+					child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
+					ezxml_set_txt(child_tag,stsxmlchild->txt);
+				}
 			}
+
 		}
 
 	}else{
@@ -207,7 +211,7 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 		/* First child */
 		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 		if (stsxmlchild == NULL){
-			new_child_tag = ezxml_add_child(*src_msg, (*xmlchild)->name, 0);
+			new_child_tag = ezxml_add_child(*xml_sts_str, (*xmlchild)->name, 0);
 			ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
 
 			if (verbose_level){
@@ -226,7 +230,7 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 			/* Update status file */
 			stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 			if (stsxmlchild == NULL){
-				new_child_tag = ezxml_add_child(*src_msg, (*xmlchild)->name, 0);
+				new_child_tag = ezxml_add_child(*xml_sts_str, (*xmlchild)->name, 0);
 				ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
 				if (verbose_level){
 					printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
@@ -339,6 +343,7 @@ void parseXML(int clientfd, char* buff){
 
 	}else if(strcmp(xml_msg->name, "retrieve") == 0){
 		/* Retrieve message */
+
 		if (verbose_level){
 			printf("Server - Receive a retrieve command OK ...\n");
 		}
@@ -352,6 +357,7 @@ void parseXML(int clientfd, char* buff){
 			}
 
 		}else{
+
 			/* Opens a file for reading */
 			file = fopen(STSFILE, "r");
 			if(file == NULL) {
@@ -365,7 +371,6 @@ void parseXML(int clientfd, char* buff){
 				fprintf(stderr,"ERROR Server - XML status file cannot be parsed");
 				exit(1);
 			}
-
 			/* Retrieve values from the status file */
 			retrieve_values(clientfd, file, &xml_msg, &xml_sts_str);
 
