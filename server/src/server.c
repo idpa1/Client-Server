@@ -39,7 +39,7 @@ void usage(char* pgname){
     printf("OPTIONS\n");
     printf(" --verbose=<int>\n"
            "    verbose level. Available levels:\n"
-           "    0: No verbosity \n"
+           "    0: No verbosity (Default)\n"
            "    1: Full verbose\n");
     printf(" --help\n"
            "   display this help and exit\n.");
@@ -95,7 +95,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	/* Pointer to the ezxml child struct */
 	ezxml_t *xmlchild;
 	/* ezxml status child structs */
-	ezxml_t stsxmlchild, child_tag, sndstsxml;
+	ezxml_t stsxmlchild = NULL, child_tag = NULL, sndstsxml = NULL;
 	/* Number of bytes sent to the client */
 	int num_bytes;
 
@@ -111,10 +111,12 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 		xmlchild = &(*src_msg)->child;
 
 		/* Get child of the status XML message with the same tag */
-		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
-		if (stsxmlchild == NULL){
+
+		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
+
+		if (stsxmlchild == NULL || ((*xmlchild)->txt)[0] == '\0' || strcmp((*xmlchild)->name, "key") != 0){
 			if (verbose_level){
-				printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
+				printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->name);
 			}
 		}else{
 
@@ -126,9 +128,9 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 				/* Get next child following the order */
 				xmlchild = &(*xmlchild)->ordered;
 				/* Look for the child in the status XML stream */
-				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
-				if (stsxmlchild == NULL){
-					printf("Server - The XML tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name);
+				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
+				if (stsxmlchild == NULL || ((*xmlchild)->txt)[0] == '\0' || strcmp((*xmlchild)->name, "key") != 0){
+					printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->name);
 				}else{
 					/*Write status XML message */
 					child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
