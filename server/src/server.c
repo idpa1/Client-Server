@@ -540,32 +540,39 @@ int main(int argc, char *argv[]) {
 			memcpy(subrecvBuff, recvBuff, strlen(recvBuff)+1);
 			subrecvBuffprt = subrecvBuff;
 
-			/* Parse XML request */
-			parseXML(clientfd, recvBuff);
-			while (cnt>2){
-				/* jump pointer of 5 chars to avoid the first command */
-				subrecvBuffprt+=5;
+			if (cnt < 2){
+				if (verbose_level){
+					/* format_buffer */
+					printf("Server - The received message is not recognized. Ignoring it OK ... \n");
+				}
+			}else{
+				/* Parse XML request */
+				parseXML(clientfd, recvBuff);
+				while (cnt>2){
+					/* jump pointer of 5 chars to avoid the first command */
+					subrecvBuffprt+=5;
 
-				retptr = strstr(subrecvBuffprt, "retrieve");
-				updtr = strstr(subrecvBuffprt, "update");
+					retptr = strstr(subrecvBuffprt, "retrieve");
+					updtr = strstr(subrecvBuffprt, "update");
 
-				if (retptr == NULL){
-					/* The next command is update */
-					subrecvBuffprt=updtr-1;
-				}else if (updtr == NULL){
-					/* The next command is retrieve */
-					subrecvBuffprt=retptr-1;
-				}else{
-					/* At least to different remaining commands -> take the first one */
-					if (retptr > updtr){
+					if (retptr == NULL){
+						/* The next command is update */
+						subrecvBuffprt=updtr-1;
+					}else if (updtr == NULL){
+						/* The next command is retrieve */
 						subrecvBuffprt=retptr-1;
 					}else{
-						subrecvBuffprt=updtr-1;
+						/* At least to different remaining commands -> take the first one */
+						if (retptr > updtr){
+							subrecvBuffprt=retptr-1;
+						}else{
+							subrecvBuffprt=updtr-1;
+						}
 					}
+					/* Process remaining requests in the buffer */
+					parseXML(clientfd, subrecvBuffprt);
+					cnt-=2;
 				}
-				/* Process remaining requests in the buffer */
-				parseXML(clientfd, subrecvBuffprt);
-				cnt-=2;
 			}
 		}
 	    /* Close client connection */
