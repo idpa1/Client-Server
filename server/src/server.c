@@ -165,6 +165,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	free(xml);
 	/* Cleanup*/
 	ezxml_free(sndstsxml);
+
 	/*Send message to the client */
 	num_bytes = write(clientfd, sendBuff, strlen(sendBuff));
 	if (num_bytes < 0) {
@@ -173,7 +174,10 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	}
 
 	if (verbose_level){
-		printf("Server - The following message has been sent by the server: %s  OK ...\n",sendBuff);
+		/* format_buffer */
+		char* fmt_buff = format_buffer(sendBuff);
+		printf("Server - The following message has been sent by the server: \n%s\n",fmt_buff);
+		free(fmt_buff);
 	}
 }
 
@@ -203,8 +207,9 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 		/* First child */
 		stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 		if (stsxmlchild == NULL){
-			new_child_tag = ezxml_add_child(stsxmlchild, (*xmlchild)->name, 0);
+			new_child_tag = ezxml_add_child(*src_msg, (*xmlchild)->name, 0);
 			ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
+
 			if (verbose_level){
 				printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
 			}
@@ -221,7 +226,7 @@ void update_values(FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_str){
 			/* Update status file */
 			stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->name, -1);
 			if (stsxmlchild == NULL){
-				new_child_tag = ezxml_add_child(stsxmlchild, (*xmlchild)->name, 0);
+				new_child_tag = ezxml_add_child(*src_msg, (*xmlchild)->name, 0);
 				ezxml_set_txt(new_child_tag,(*xmlchild)->txt);
 				if (verbose_level){
 					printf("Server - Cannot find %s in status file. Added OK ...\n",(*xmlchild)->name);
@@ -323,6 +328,7 @@ void parseXML(int clientfd, char* buff){
 				perror("ERROR server - Can't open status file\n");
 			    exit(1);
 			}
+
 			char *updatedxml = ezxml_toxml(xml_sts_str);
 			fprintf(file,"%s",updatedxml);
 
@@ -513,13 +519,17 @@ int main(int argc, char *argv[]) {
 			 *  or fail the operation*/
 
 			if (verbose_level){
-				printf("Server - Received Message: %s\n", recvBuff);
+				/* format_buffer */
+				char* fmt_buff = format_buffer(recvBuff);
+				printf("Server - Received Message: \n%s\n",fmt_buff);
+				free(fmt_buff);
 			}
 
 			/* Check the content of the request
 			 * If the request include several commands -> Split them
 			 * TODO:If the buffer is incomplete
 			 */
+
 			/* Count the number of retrieve and update commands */
 			cnt = count_substrings("retrieve",recvBuff)+count_substrings("update",recvBuff);
 			memcpy(subrecvBuff, recvBuff, strlen(recvBuff)+1);

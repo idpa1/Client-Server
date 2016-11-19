@@ -43,3 +43,25 @@
 /* XML Status file */
 #define STSFILE "XMLsts.dat"
 
+
+
+/**
+ * \brief Format XML buffer.
+ *        Add '\t' and '\n' to the XML buffer
+ *
+ * \param[in] s  Pointer to the buffer
+ *
+ * \return returns pointer to the formatted string
+ */
+char* format_buffer(char *s);
+
+
+/**
+ * \brief Remove '\t' and '\n' from XML buffers
+ *
+ * \param[in] s  Pointer to the buffer
+ *
+ * \return returns pointer to the unformatted string
+ */
+char* unformat_buffer(char *s);
+
