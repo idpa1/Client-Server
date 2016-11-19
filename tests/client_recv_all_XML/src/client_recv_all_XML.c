@@ -1,6 +1,18 @@
-/*
-*DESCRIPTION: This program will be specified an IP address in the command line
-*			  and will connect to an already running server.
+/**
+   \file client_recv_all_XML.c
+   \brief  Client retrieving all values from the server.
+           This program will be specified an IP address in the command line
+           and will connect to an already running server.
+
+   \par  Module owner:
+   \li      Iker DE POY
+
+   \par  Authors:
+   \li      Iker DE POY
+
+   \par  Id: $Id$
+   \par  Date: $Date$
+   \par  Revision: $Rev$
 */
 
 #include "client.h"
@@ -15,6 +27,10 @@ int main(int argc, char *argv[]) {
 
 	/* Send buffer */
 	char sendBuff[SENDBUFFSIZE];
+
+	/* Formatted buffer */
+	char* fmt_buff;
+
 	/* Number of bytes written to the file descriptor */
 	int num_bytes;
 
@@ -56,8 +72,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	printf("Message size: %lu\n",strlen(sendBuff));
-	printf("Message sent: %s\n", sendBuff);
+	fmt_buff = format_buffer(sendBuff);
+	printf("Client - Message sent: \n%s\n",fmt_buff);
+	free(fmt_buff);
 
 	/* Get answer from the server */
 
@@ -70,9 +87,10 @@ int main(int argc, char *argv[]) {
 	/*  null terminate your buffer */
 	sendBuff[num_bytes] = '\0';
 
-	printf("Message received size: %lu\n",strlen(sendBuff));
-	printf("Received Message: %s\n", sendBuff);
-	printf("TEST SUCCESS\n");
+	fmt_buff = format_buffer(sendBuff);
+	printf("Client - Message received: \n%s\n",fmt_buff);
+	free(fmt_buff);
+
 
 	/* Close server connection */
 	close(sockfd);

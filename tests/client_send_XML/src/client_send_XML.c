@@ -1,8 +1,19 @@
-/*
-*DESCRIPTION: This program will be specified an IP address in the command line
-*			  and will connect to an already running server.
-*/
+/**
+   \file client_send_XML.c
+   \brief  Client sending XML message to the server.
+           This program will be specified an IP address in the command line
+           and will connect to an already running server.
 
+   \par  Module owner:
+   \li      Iker DE POY
+
+   \par  Authors:
+   \li      Iker DE POY
+
+   \par  Id: $Id$
+   \par  Date: $Date$
+   \par  Revision: $Rev$
+*/
 #include "client.h"
 
 
@@ -16,6 +27,10 @@ int main(int argc, char *argv[]) {
 
 	/* Send buffer */
 	char sendBuff[SENDBUFFSIZE];
+
+	/* Formatted buffer*/
+	char* fmt_buff;
+
 	/* Number of bytes written to the file descriptor */
 	int num_bytes;
 
@@ -67,8 +82,9 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	printf("Message size: %lu\n",strlen(sendBuff));
-	printf("Message sent: %s\n", sendBuff);
+	fmt_buff = format_buffer(sendBuff);
+	printf("Client - Message sent: \n%s\n",fmt_buff);
+	free(fmt_buff);
 
 	printf("TEST SUCCESS\n");
 

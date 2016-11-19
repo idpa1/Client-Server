@@ -1,7 +1,19 @@
+/**
+   \file client_sconnection.c
+   \brief  Client testing connection with the server.
+           The socket is closed after each message.
+           This program will be specified an IP address in the command line
+           and will connect to an already running server.
 
-/*
-*DESCRIPTION: This program will be specified an IP address in the command line
-*			  and will connect to an already running server.
+   \par  Module owner:
+   \li      Iker DE POY
+
+   \par  Authors:
+   \li      Iker DE POY
+
+   \par  Id: $Id$
+   \par  Date: $Date$
+   \par  Revision: $Rev$
 */
 
 #include "client.h"
