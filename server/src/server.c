@@ -545,7 +545,7 @@ int main(int argc, char *argv[]) {
 			subrecvBuffprt = recvBuff;
 
 			/* Pair numbers of update and avoid several retrieves commands */
-			if ((cnt_up>0 && cnt_up%2!=0) || cnt_ret>2){
+			if ((cnt_up>0 && cnt_up%2!=0) || cnt_ret>2 || (cnt_up==0 && cnt_ret==0)){
 				if (verbose_level){
 					/* format_buffer */
 					printf("Server - The received message is not valid. Ignoring it OK ... \n");
