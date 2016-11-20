@@ -107,6 +107,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 
 	/* Retrieve specific values. Parse all child nodes from retrieve XML */
 	if ((*src_msg)->child != NULL){
+
 		/* First child retrieve XML message */
 		xmlchild = &(*src_msg)->child;
 
@@ -167,6 +168,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	}else{
 		memcpy(sendBuff,xml,strlen(xml)+1);
 	}
+
 	/* Free xml*/
 	free(xml);
 	/* Cleanup*/
@@ -379,6 +381,8 @@ void parseXML(int clientfd, char* buff){
 			/* Free memory */
 			ezxml_free(xml_sts_str);
 		}
+	}else {
+		fprintf(stderr,"Server - The XML message cannot be parsed. Ignoring it OK ...");
 	}
 
 	/* Close file */
@@ -434,8 +438,8 @@ int main(int argc, char *argv[]) {
 	/* Receptions buffer */
 	char recvBuff[SERVERRECVBUFFSIZE];
 
-	/* Variable to handle several commands in a message */
-	int cnt;
+	/* Variables to handle several commands in a message */
+	int cnt_up, cnt_ret;
 	char *retptr,*updtr,*subrecvBuffprt;
 	char subrecvBuff[SERVERRECVBUFFSIZE];
 
@@ -532,53 +536,57 @@ int main(int argc, char *argv[]) {
 				free(fmt_buff);
 			}
 
-			/* Check the content of the request
-			 * If the request include several commands -> Split them
-			 * TODO:If the buffer is incomplete
-			 */
-
 			/* Count the number of retrieve and update commands */
-			cnt = count_substrings("retrieve",recvBuff)+count_substrings("update",recvBuff);
-			memcpy(subrecvBuff, recvBuff, strlen(recvBuff)+1);
-			subrecvBuffprt = subrecvBuff;
+			cnt_up = count_substrings("update",recvBuff);
+			cnt_ret = count_substrings("retrieve",recvBuff);
 
-			if (cnt < 2){
+
+			memcpy(subrecvBuff, recvBuff, strlen(recvBuff)+1);
+			subrecvBuffprt = recvBuff;
+
+			/* Pair numbers of update and avoid several retrieves commands */
+			if ((cnt_up>0 && cnt_up%2!=0) || cnt_ret>2){
 				if (verbose_level){
 					/* format_buffer */
-					printf("Server - The received message is not recognized. Ignoring it OK ... \n");
+					printf("Server - The received message is not valid. Ignoring it OK ... \n");
 				}
 			}else{
-				/* Parse XML request */
-				parseXML(clientfd, recvBuff);
-				while (cnt>2){
-					/* jump pointer of 5 chars to avoid the first command */
-					subrecvBuffprt+=5;
+				/* Remaining commands */
+				while (cnt_up>=2 || cnt_ret>0){
+				/* Process remaining requests in the buffer */
+				parseXML(clientfd, subrecvBuff);
 
-					retptr = strstr(subrecvBuffprt, "retrieve");
-					updtr = strstr(subrecvBuffprt, "update");
+				/* Get pointers of each command and decrease counter according to the next command */
+				retptr = strstr(subrecvBuffprt, "retrieve");
+				updtr = strstr(subrecvBuffprt, "update");
 
-					if (retptr == NULL){
-						/* The next command is update */
-						subrecvBuffprt=updtr-1;
-					}else if (updtr == NULL){
-						/* The next command is retrieve */
-						subrecvBuffprt=retptr-1;
-					}else{
-						/* At least to different remaining commands -> take the first one */
-						if (retptr > updtr){
-							subrecvBuffprt=retptr-1;
-						}else{
-							subrecvBuffprt=updtr-1;
-						}
+				if ((updtr != NULL && retptr == NULL) || ((updtr != NULL && retptr != NULL) && (retptr>updtr))){
+					/* The previous command has been an update */
+					updtr = strstr(subrecvBuffprt+5, "update");
+					/* Next update */
+					subrecvBuffprt=updtr+7;
+					cnt_up-=2;
+				}else if ((retptr != NULL && updtr == NULL) || ((updtr != NULL && retptr != NULL) && (retptr<updtr))){
+					/* The previous command is retrieve */
+					updtr = strstr(subrecvBuffprt+5, "retrieve");
+
+					/* Non empty retrieve command */
+					if (updtr != NULL){
+						updtr +=9;
 					}
-					/* Process remaining requests in the buffer */
-					parseXML(clientfd, subrecvBuffprt);
-					cnt-=2;
+					subrecvBuffprt=updtr;
+					cnt_ret=0;
+				}else{
+					perror("ERROR Server - Wrong XML command");
+					exit(1);
+				}
+				if (subrecvBuffprt!=NULL)
+					memcpy(subrecvBuff, subrecvBuffprt, strlen(subrecvBuffprt)+1);
 				}
 			}
 		}
-	    /* Close client connection */
-	    close(clientfd);
+		/* Close client connection */
+		close(clientfd);
 	}
 
 	/* Clean up (should never get here) */
