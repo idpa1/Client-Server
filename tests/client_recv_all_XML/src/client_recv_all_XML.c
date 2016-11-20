@@ -91,6 +91,8 @@ int main(int argc, char *argv[]) {
 	printf("Client - Message received: \n%s\n",fmt_buff);
 	free(fmt_buff);
 
+	printf("TEST SUCCESS\n");
+
 
 	/* Close server connection */
 	close(sockfd);
