@@ -61,7 +61,7 @@ char* format_buffer(char *s) {
 			*p2++ = *s++;
 			*p2++='\n';
 
-			if ((strncmp(s+2,"retrieve", 8) != 0) && (strncmp(s+2,"update", 6) != 0) && (strncmp(s+2,"status", 6) != 0)){
+			if ((strncmp(s+1,"retrieve", 8) != 0) && (strncmp(s+2,"retrieve", 8) != 0) && (strncmp(s+1,"update", 8) != 0) && (strncmp(s+2,"update", 6) != 0) && (strncmp(s+2,"status", 6) != 0) && (strncmp(s+1,"status", 6) != 0)){
 				*p2++='\t';
 			}
 		} else {
