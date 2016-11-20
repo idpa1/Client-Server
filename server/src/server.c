@@ -117,7 +117,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 
 		if (stsxmlchild == NULL || ((*xmlchild)->txt)[0] == '\0' || strcmp((*xmlchild)->name, "key") != 0){
 			if (verbose_level){
-				printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->name);
+				printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->txt);
 			}
 		}else{
 
@@ -131,7 +131,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 				/* Look for the child in the status XML stream */
 				stsxmlchild = ezxml_get(*xml_sts_str, (*xmlchild)->txt, -1);
 				if (stsxmlchild == NULL || ((*xmlchild)->txt)[0] == '\0' || strcmp((*xmlchild)->name, "key") != 0){
-					printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->name);
+					printf("Server - The XML %s tag: %s cannot be found in status file. Ignoring request OK ...\n",(*xmlchild)->name,(*xmlchild)->txt);
 				}else{
 					/*Write status XML message */
 					child_tag = ezxml_add_child(sndstsxml, stsxmlchild->name, 0);
@@ -163,7 +163,7 @@ void retrieve_values(int clientfd, FILE *fp, ezxml_t *src_msg, ezxml_t *xml_sts_
 	char *xml = ezxml_toxml(sndstsxml);
 	/* Copy to the write buffer*/
 	if ((int)strlen(xml) >= SERVERSNDBUFFSIZE){
-		perror("ERROR Server - XML Message is bigger than the send buffer");
+		perror("ERROR Server - XML Message is bigger than the sendhudity buffer");
 		exit(1);
 	}else{
 		memcpy(sendBuff,xml,strlen(xml)+1);
